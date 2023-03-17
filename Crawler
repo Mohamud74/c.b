@@ -1,0 +1,104 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <unordered_map>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+class HashMap {
+private:
+    int capacity = 1000;
+    int size = 50;
+    std::unordered_map<std::string, std::string> map;
+
+    int get_hash(std::string key) {
+        int hash = 0;
+        for (auto c : key) {
+            hash += static_cast<int>(c);
+        }
+        return hash % size;
+    }
+
+public:
+    void add(std::string key, std::string value) {
+        int key_hash = get_hash(key);
+        if (map.find(key) == map.end()) {
+            map[key] = value;
+        } else {
+            map[key] += "\n" + value;
+        }
+    }
+
+    std::vector<std::string> keys() {
+        std::vector<std::string> arr;
+        for (auto& item : map) {
+            arr.push_back(item.first);
+        }
+        return arr;
+    }
+
+    void print() {
+        std::cout << "----HASH MAP----" << std::endl;
+        for (auto& item : map) {
+            std::cout << item.first << ": " << item.second << std::endl;
+        }
+    }
+
+    void crawl() {
+        std::string search_str;
+        std::cout << "-----------------\nSearch for a string:\n-----------------\n";
+        std::getline(std::cin, search_str);
+
+        // Loop through files with certain extensions
+        const std::vector<std::string> extensions = {".txt", ".md", ".docx"};
+        for (auto& p : fs::recursive_directory_iterator(".")) {
+            if (p.is_regular_file() && std::find(extensions.begin(), extensions.end(), p.path().extension()) != extensions.end()) {
+                std::ifstream file(p.path());
+                std::string line;
+                while (std::getline(file, line)) {
+                    if (line.find(search_str) != std::string::npos) {
+                        std::cout << search_str << " can be found at:\n-----------\n" << p.path() << "\n-----------" << std::endl;
+                        add(search_str, p.path());
+                        break;
+                    }
+                }
+            }
+        }
+    }
+};
+
+int main() {
+    HashMap h;
+
+    h.crawl();
+    h.print();
+    std::cout << "Keys: ";
+    for (auto& key : h.keys()) {
+        std::cout << key << " ";
+    }
+    std::cout << std::endl;
+
+    bool is_running = true;
+    while (is_running) {
+        std::string search_again;
+        std::cout << "\nDo you want to search again?\n\nPress Y or N: ";
+        std::getline(std::cin, search_again);
+        if (search_again == "Y" || search_again == "y") {
+            h.crawl();
+            h.print();
+            std::cout << "Keys: ";
+            for (auto& key : h.keys()) {
+                std::cout << key << " ";
+            }
+            std::cout << std::endl;
+        } else if (search_again == "N" || search_again == "n") {
+            std::cout << "--------------\nHave a nice day! :)\n--------------" << std::endl;
+            is_running = false;
+        } else {
+            std::cout << "\nPlease enter Y or N." << std::endl;
+        }
+    }
+
+    return 0;
+}
